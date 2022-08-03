@@ -3,6 +3,7 @@ package com.mercadolivro.controller
 import com.mercadolivro.controller.request.PostCustomerRequest
 import com.mercadolivro.controller.request.PutCustomerRequest
 import com.mercadolivro.model.CustomerModel
+import com.mercadolivro.service.CustomerService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -17,18 +18,14 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController //Falando para o Spring que essa classe eh uma controller
 @RequestMapping("customer") //declarando o caminho que o controllador eh referente
-class CustomerController {
-    //criei uma lista mutavel usando a model pra quando der o Get ele retornar uma lista com os dados criados no Post
-    val customers = mutableListOf<CustomerModel>()
-
+class CustomerController(
+    val customerService : CustomerService
+) {
     //endpoint get
     @GetMapping
     //puxei a lista e retornei ela
     fun getAll(@RequestParam name: String?): List<CustomerModel> {
-        name?.let {  //o name com interroga indica que pode vir null
-            return customers.filter { it.name.contains(name, true) } //filtrando o nome e declarando ignoreCase
-        }
-        return customers
+        return customerService.getAll(name)
     }
 
     //criei o objeto customer que recebe as variaveis que o usuario inserir de acordo
@@ -36,38 +33,24 @@ class CustomerController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED) //definindo que a resposta HTTP apos usar o metodo Post, sera 201
     fun create(@RequestBody customer: PostCustomerRequest) {
-
-        //definindo que sempre quie a lista tiver vazia, o primeiro cara sera 1, caso o contrario, ela colocara +1. TO STRING no final faz eles virarem string
-        val id = if (customers.isEmpty()) {
-            1
-        } else {
-            customers.last().id.toInt() + 1
-        } .toString()
-
-
-        customers.add(CustomerModel(id, customer.name, customer.email))
-        println(customer)
+        customerService.create(customer)
     }
 
     //declarando um valor dinamico para ser chamado na url
     @GetMapping("/{id}")
     fun getCustomer(@PathVariable id: String): CustomerModel {
-        return customers.filter { it.id == id }.first() //se o registro tiver um id igual ao q passou pela url ele retorna. o .first pega o 1 registro
+        return customerService.getCustomer(id)
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun update(@PathVariable id: String, @RequestBody customer: PutCustomerRequest) {
-        //declaro com ir dentro do let as variaveis que eu tenho na costumer model
-       customers.filter { it.id == id }.first().let {
-           it.name = customer.name
-           it.email = customer.email
-       }
+        customerService.update(id, customer)
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: String) {
-        customers.removeIf { it.id == id }
+        customerService.delete(id)
         }
 }
